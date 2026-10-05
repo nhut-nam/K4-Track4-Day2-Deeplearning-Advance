@@ -350,13 +350,17 @@ def run(cfg: Config) -> dict:
     # Reload best model for final evaluation
     model.load_state_dict(torch.load(out_path / "best_model.pth"))
     
+    import torch.nn.functional as F
+    
     # Save val predictions
     val_filenames, val_y_true, val_logits, _ = evaluate(model, val_loader, criterion, device)
-    save_predictions(pred_path(cfg, "val"), val_filenames, val_y_true, val_logits)
+    val_probs = F.softmax(torch.tensor(val_logits), dim=1).numpy()
+    save_predictions(pred_path(cfg, "val"), val_filenames, val_y_true, val_probs)
     
     if cfg.save_test_predictions:
         test_filenames, test_y_true, test_logits, _ = evaluate(model, test_loader, criterion, device)
-        save_predictions(pred_path(cfg, "test"), test_filenames, test_y_true, test_logits)
+        test_probs = F.softmax(torch.tensor(test_logits), dim=1).numpy()
+        save_predictions(pred_path(cfg, "test"), test_filenames, test_y_true, test_probs)
         
     return {
         "best_epoch": best_epoch,
